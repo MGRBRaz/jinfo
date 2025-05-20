@@ -1,8 +1,10 @@
 import streamlit as st
 import pandas as pd
-from data import get_processes_df, get_process_by_id, delete_process
+import os
+from data import get_processes_df, get_process_by_id, delete_process, archive_process
 from utils import export_to_excel, export_to_csv, get_status_color
 from html_generator import generate_processes_table_html, get_download_link
+from html_export_pagination import export_html_with_pagination
 
 def display_home(navigate_function, filter_ids=None):
     """Display the home page with the processes table
@@ -145,11 +147,17 @@ def display_home(navigate_function, filter_ids=None):
             # Definir informações do cliente selecionado para o HTML
             client_name = None
             export_process_ids = None
+            client_logo = None
             
             # Caso 1: Cliente logado vendo seus processos
             if st.session_state.user_role == 'client':
-                client_name = st.session_state.user_name
-                export_process_ids = filter_ids
+                from components.auth import get_users
+                all_users = get_users()
+                current_user = next((user for user in all_users if user.get('id') == st.session_state.user_id), None)
+                if current_user:
+                    client_name = current_user.get('name', '')
+                    export_process_ids = filter_ids
+                    client_logo = current_user.get('logo_path')
                 
             # Caso 2: Admin selecionou um cliente específico
             elif st.session_state.user_role == 'admin' and 'selected_client' in locals() and selected_client != "Todos os clientes":
@@ -158,14 +166,17 @@ def display_home(navigate_function, filter_ids=None):
                 if selected_client_info:
                     client_name = selected_client_info.get('name', '')
                     export_process_ids = selected_client_info.get('processes', [])
+                    client_logo = selected_client_info.get('logo_path')
             
-            with st.spinner("Gerando página HTML interativa..."):
-                # Gerar HTML com a tabela interativa
-                filepath, filename = generate_processes_table_html(
+            with st.spinner("Gerando página HTML interativa com paginação..."):
+                # Gerar HTML com a tabela interativa e paginação, mantendo o visual original
+                filepath, filename = export_html_with_pagination(
                     filtered_df, 
                     process_ids=export_process_ids,
+                    title="Relatório de Processos de Importação/Exportação",
                     include_details=True,
-                    client_name=client_name
+                    client_name=client_name,
+                    client_logo=client_logo
                 )
                 
                 if filepath:
@@ -183,7 +194,7 @@ def display_home(navigate_function, filter_ids=None):
     # Add styling to the status column
     def color_status(val):
         color = get_status_color(val)
-        return f'background-color: {color}; color: white; border-radius: 20px; padding: 0.3rem 0.7rem; text-align: center; font-weight: 500; width: 90%; margin: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);'
+        return f'background-color: {color}; color: white; border-radius: 50px; padding: 0.3rem 0.9rem; text-align: center; font-weight: 500; width: 90%; margin: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);'
     
     # Display dataframe with styling (using .map instead of .applymap which is deprecated)
     # Configuração de colunas para renomear os campos
@@ -205,7 +216,11 @@ def display_home(navigate_function, filter_ids=None):
         "current_period_start": "Início do período atual",
         "current_period_expiry": "Vencimento do período",
         "storage_days": "Dias armazenados",
-        "original_docs": "Documentos originais"
+        "original_docs": "Documentos originais",
+        # Campos específicos para exportação
+        "cargo_deadline": "Deadline Carga",
+        "deadline_draft": "Deadline Draft",
+        "export_type": "Tipo de Exportação"
     }
     
     # Aplicar estilos às células usando Pandas Styler
@@ -277,7 +292,7 @@ def display_home(navigate_function, filter_ids=None):
         
         # Botões apenas para administradores
         if 'user_role' in st.session_state and st.session_state.user_role == 'admin':
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
             
             with col1:
                 if st.button("✏️ Editar Processo", use_container_width=True):
@@ -287,6 +302,16 @@ def display_home(navigate_function, filter_ids=None):
             with col2:
                 # Delete process option (with confirmation)
                 delete_button = st.button("🗑️ Excluir Processo", use_container_width=True, key="delete_process_button")
+                
+            with col3:
+                # Archive process option
+                archive_button = st.button("📦 Arquivar Processo", use_container_width=True, key="archive_process_button")
+                if archive_button and process_id:
+                    if archive_process(process_id):
+                        st.success(f"Processo arquivado com sucesso!")
+                        st.rerun()
+                    else:
+                        st.error("Erro ao arquivar o processo.")
         else:
             st.info("Como cliente, você pode apenas visualizar os detalhes dos processos.")
     else:

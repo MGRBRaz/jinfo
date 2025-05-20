@@ -2,8 +2,25 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import os
+import sys
 import urllib.parse
 
+# Adicionar diretório atual ao PYTHONPATH, se necessário
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
+
+# Verificação do ambiente
+try:
+    import data
+    print(f"Módulo data encontrado: {data.__file__}")
+except ImportError as e:
+    print(f"Erro ao importar o módulo data: {e}")
+    print(f"PYTHONPATH: {sys.path}")
+    print(f"Conteúdo do diretório atual: {os.listdir('.')}")
+    raise
+
+# Agora importamos os componentes
 from components.home import display_home
 from components.add_edit import display_add_edit_form
 from components.view_details import display_detail_view
@@ -11,6 +28,7 @@ from components.client_view import display_client_view
 from components.share import display_share_interface, validate_share_token
 from components.settings import display_settings
 from components.auth import display_login, display_user_management, init_auth_state, logout
+from components.archived import display_archived_processes
 from data import load_data, save_data
 from assets.stock_photos import get_random_image
 import sheets_to_html
@@ -41,6 +59,12 @@ if 'current_page' not in st.session_state:
     st.session_state.current_page = "home"
 if 'selected_process' not in st.session_state:
     st.session_state.selected_process = None
+    
+# Inicializar opções de status
+if 'status_options' not in st.session_state:
+    from components.settings import get_status_options
+    # Carregar todos os status disponíveis (sem filtro de tipo)
+    st.session_state.status_options = get_status_options()
 if 'edit_mode' not in st.session_state:
     st.session_state.edit_mode = False
 if 'filter_value' not in st.session_state:
@@ -106,7 +130,7 @@ with col3:
 
 # Navigation bar - Mostra todos os botões para administradores
 if st.session_state.user_role == "admin":
-    nav_col1, nav_col2, nav_col3, nav_col4, nav_col5, nav_col6 = st.columns(6)
+    nav_col1, nav_col2, nav_col3, nav_col4, nav_col5, nav_col6, nav_col7 = st.columns(7)
     with nav_col1:
         if st.button("📋 Painel", use_container_width=True):
             navigate_to("home")
@@ -115,15 +139,18 @@ if st.session_state.user_role == "admin":
             st.session_state.edit_mode = False
             navigate_to("add_edit")
     with nav_col3:
+        if st.button("📦 Arquivados", use_container_width=True):
+            navigate_to("archived")
+    with nav_col4:
         if st.button("🔗 Compartilhar", use_container_width=True):
             navigate_to("share")
-    with nav_col4:
+    with nav_col5:
         if st.button("📊 Importar Planilha", use_container_width=True):
             navigate_to("reports")
-    with nav_col5:
+    with nav_col6:
         if st.button("⚙️ Configurações", use_container_width=True):
             navigate_to("settings")
-    with nav_col6:
+    with nav_col7:
         if st.button("👥 Usuários", use_container_width=True):
             navigate_to("users")
 else:
@@ -143,6 +170,13 @@ if st.session_state.current_page == "home":
 elif st.session_state.current_page == "add_edit":
     # Somente admin pode adicionar/editar
     if st.session_state.user_role == 'admin':
+        # Recarregar a lista de status do arquivo de configuração antes de exibir o formulário
+        from components.settings import load_status_config
+        status_config = load_status_config()
+        from components.settings import get_status_options
+        # Carregar todos os status disponíveis (sem filtro de tipo)
+        st.session_state.status_options = get_status_options()
+        
         display_add_edit_form(navigate_to)
     else:
         st.error("Você não tem permissão para acessar esta página.")
@@ -187,6 +221,13 @@ elif st.session_state.current_page == "users":
     # Somente admin pode gerenciar usuários
     if st.session_state.user_role == 'admin':
         display_user_management()
+    else:
+        st.error("Você não tem permissão para acessar esta página.")
+        navigate_to("home")
+elif st.session_state.current_page == "archived":
+    # Somente admin pode ver processos arquivados
+    if st.session_state.user_role == 'admin':
+        display_archived_processes(navigate_to)
     else:
         st.error("Você não tem permissão para acessar esta página.")
         navigate_to("home")

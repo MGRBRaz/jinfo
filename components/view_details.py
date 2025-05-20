@@ -19,6 +19,13 @@ def display_detail_view(navigate_function):
             navigate_function("home")
         return
     
+    # Botão X para fechar o detalhamento (posicionado no canto superior direito)
+    close_btn_col1, close_btn_col2 = st.columns([0.95, 0.05])
+    with close_btn_col2:
+        if st.button("❌", help="Fechar detalhamento"):
+            navigate_function("home")
+            return
+    
     # Title with process ID and status
     col1, col2 = st.columns([3, 1])
     
@@ -234,6 +241,101 @@ def display_detail_view(navigate_function):
         st.markdown(f'<div class="data-value" style="min-height: 100px;">{observations}</div>', unsafe_allow_html=True)
         
         st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Seção específica para Exportação
+        if process.get("type", "importacao") == "exportacao":
+            st.markdown("""
+            <div class="info-panel">
+                <h3 class="info-panel-title">Informações Específicas de Exportação</h3>
+            """, unsafe_allow_html=True)
+            
+            # Informação do tipo de exportação (Marítima/Rodoviária)
+            export_type = process.get("export_type", "Marítima")
+            st.markdown(f'<div class="info-type" style="margin-bottom: 15px; font-weight: bold;">Tipo de Exportação: <span style="color: #2c3e50;">{export_type}</span></div>', unsafe_allow_html=True)
+            
+            col1, col2, col3 = st.columns(3)
+            
+            # Campos básicos de documentação de exportação
+            with col1:
+                st.markdown('<div class="field-label">Data de Registro da DU-E:</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="data-value">{format_date(process.get("due_date", ""))}</div>', unsafe_allow_html=True)
+                
+                st.markdown('<div class="field-label">Valor do Despacho:</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="data-value">{process.get("dispatch_value", "")}</div>', unsafe_allow_html=True)
+            
+            with col2:
+                st.markdown('<div class="field-label">Número do Conhecimento:</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="data-value">{process.get("knowledge_number", "")}</div>', unsafe_allow_html=True)
+                
+                st.markdown('<div class="field-label">Data do Conhecimento:</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="data-value">{format_date(process.get("knowledge_date", ""))}</div>', unsafe_allow_html=True)
+            
+            with col3:
+                st.markdown('<div class="field-label">Data de Averbação:</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="data-value">{format_date(process.get("endorsement_date", ""))}</div>', unsafe_allow_html=True)
+                
+                st.markdown('<div class="field-label">Drawback:</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="data-value">{process.get("drawback", "")}</div>', unsafe_allow_html=True)
+            
+            # Subseção específica para Exportação Marítima
+            if export_type == "Marítima":
+                st.markdown('<div style="margin-top: 20px; margin-bottom: 10px; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 5px;">Detalhes de Exportação Marítima</div>', unsafe_allow_html=True)
+                
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    st.markdown('<div class="field-label">Deadline Carga:</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="data-value">{format_date(process.get("cargo_deadline", ""))}</div>', unsafe_allow_html=True)
+                    
+                    st.markdown('<div class="field-label">Deadline Draft:</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="data-value">{format_date(process.get("deadline_draft", ""))}</div>', unsafe_allow_html=True)
+                
+                with col2:
+                    st.markdown('<div class="field-label">Terminal de Embarque:</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="data-value">{process.get("shipping_terminal", "")}</div>', unsafe_allow_html=True)
+                    
+                    st.markdown('<div class="field-label">Data de Embarque:</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="data-value">{format_date(process.get("shipping_date", ""))}</div>', unsafe_allow_html=True)
+                
+                with col3:
+                    st.markdown('<div class="field-label">Previsão de Chegada:</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="data-value">{format_date(process.get("arrival_forecast", ""))}</div>', unsafe_allow_html=True)
+                    
+                    st.markdown('<div class="field-label">Desembaraço REDEX:</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="data-value">{process.get("redex_clearance", "Não")}</div>', unsafe_allow_html=True)
+            
+            # Subseção específica para Exportação Rodoviária
+            elif export_type == "Rodoviária":
+                st.markdown('<div style="margin-top: 20px; margin-bottom: 10px; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 5px;">Detalhes de Exportação Rodoviária</div>', unsafe_allow_html=True)
+                
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    st.markdown('<div class="field-label">Terminal de Cruze:</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="data-value">{process.get("cross_terminal", "")}</div>', unsafe_allow_html=True)
+                
+                with col2:
+                    st.markdown('<div class="field-label">Data de Entrega no Cliente:</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="data-value">{format_date(process.get("client_delivery_date", ""))}</div>', unsafe_allow_html=True)
+                
+                with col3:
+                    st.markdown('<div class="field-label">Transportadora:</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="data-value">{process.get("carrier", "")}</div>', unsafe_allow_html=True)
+            
+            # Final da subseção específica para informações de rastreamento de todos os tipos de exportação
+            st.markdown('<div style="margin-top: 20px; margin-bottom: 10px; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 5px;">Informações de Rastreio</div>', unsafe_allow_html=True)
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown('<div class="field-label">Data de Envio dos Originais:</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="data-value">{format_date(process.get("originals_sent_date", ""))}</div>', unsafe_allow_html=True)
+            
+            with col2:
+                st.markdown('<div class="field-label">Número do Rastreio:</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="data-value">{process.get("tracking_number", "")}</div>', unsafe_allow_html=True)
+            
+            st.markdown('</div>', unsafe_allow_html=True)
     
     # Tab 2: Events log
     with tab2:

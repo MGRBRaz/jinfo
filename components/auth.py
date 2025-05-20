@@ -86,7 +86,7 @@ def logout():
     st.session_state.user_email = None
     st.session_state.client_processes = []
 
-def add_user(name, email, password, role='client', processes=None):
+def add_user(name, email, password, role='client', processes=None, logo_path=None):
     """Adicionar novo usuário"""
     users_data = load_users()
     
@@ -111,6 +111,10 @@ def add_user(name, email, password, role='client', processes=None):
     # Adicionar processos se for cliente
     if role == 'client' and processes:
         new_user['processes'] = processes
+        
+    # Adicionar logo se for cliente
+    if logo_path:
+        new_user['logo_path'] = logo_path
     
     # Adicionar à lista
     users_data['users'].append(new_user)
@@ -118,7 +122,7 @@ def add_user(name, email, password, role='client', processes=None):
     
     return True, "Usuário adicionado com sucesso"
 
-def update_user(user_id, name=None, email=None, password=None, role=None, processes=None):
+def update_user(user_id, name=None, email=None, password=None, role=None, processes=None, logo_path=None):
     """Atualizar usuário existente"""
     users_data = load_users()
     
@@ -134,6 +138,8 @@ def update_user(user_id, name=None, email=None, password=None, role=None, proces
                 users_data['users'][i]['role'] = role
             if processes is not None:  # Permitir lista vazia
                 users_data['users'][i]['processes'] = processes
+            if logo_path is not None:
+                users_data['users'][i]['logo_path'] = logo_path
             
             users_data['users'][i]['updated_at'] = datetime.now().isoformat()
             save_users(users_data)
@@ -233,14 +239,35 @@ def display_user_management():
         password = st.text_input("Senha", type="password")
         role = st.selectbox("Tipo", options=["admin", "client"], format_func=lambda x: "Administrador" if x == "admin" else "Cliente")
         
-        # Se for cliente, exibir opção para vincular processos
+        # Se for cliente, exibir opção para vincular processos e logo
         process_ids = []
+        logo_path = None
         if role == 'client':
             from data import get_processes_df
             processes_df = get_processes_df()
             if not processes_df.empty:
                 available_processes = processes_df['id'].tolist()
                 process_ids = st.multiselect("Processos", options=available_processes)
+            
+            # Upload de logo do cliente
+            st.write("Logo do Cliente (opcional)")
+            logo_path = None  # Inicializar logo_path como None
+            uploaded_logo = st.file_uploader("Enviar logo (PNG ou JPG)", type=["png", "jpg", "jpeg"], key="logo_uploader_add")
+            if uploaded_logo is not None:
+                # Criar diretório de logos se não existir
+                # Usar import global do topo do arquivo
+                logo_dir = os.path.join("assets", "client_logos")
+                if not os.path.exists(logo_dir):
+                    os.makedirs(logo_dir)
+                
+                # Salvar a imagem no diretório de logos
+                logo_filename = f"logo_{datetime.now().strftime('%Y%m%d%H%M%S')}.png"
+                logo_path = os.path.join(logo_dir, logo_filename)
+                
+                with open(logo_path, "wb") as f:
+                    f.write(uploaded_logo.getbuffer())
+                
+                st.success(f"Logo carregada com sucesso!")
         
         col1, col2 = st.columns(2)
         with col1:
@@ -250,7 +277,7 @@ def display_user_management():
             cancel = st.form_submit_button("Cancelar", use_container_width=True)
     
     if submit and name and email and password:
-        success, message = add_user(name, email, password, role, process_ids)
+        success, message = add_user(name, email, password, role, process_ids, logo_path)
         if success:
             st.success(message)
             st.rerun()
@@ -310,8 +337,9 @@ def display_user_management():
                                       index=0 if user_to_edit.get('role') == 'admin' else 1,
                                       format_func=lambda x: "Administrador" if x == "admin" else "Cliente")
                 
-                # Se for cliente, exibir opção para vincular processos
+                # Se for cliente, exibir opção para vincular processos e logo
                 process_ids = user_to_edit.get('processes', [])
+                logo_path = user_to_edit.get('logo_path')
                 if role == 'client':
                     from data import get_processes_df
                     processes_df = get_processes_df()
@@ -320,6 +348,28 @@ def display_user_management():
                         # Filtrar apenas os processos que ainda existem
                         default_processes = [p for p in process_ids if p in available_processes]
                         process_ids = st.multiselect("Processos", options=available_processes, default=default_processes)
+                    
+                    # Upload de logo do cliente
+                    st.write("Logo do Cliente (opcional)")
+                    # Usar import global no topo do arquivo em vez de importação local
+                    if logo_path and os.path.exists(logo_path):
+                        st.image(logo_path, width=150, caption="Logo atual")
+                    
+                    uploaded_logo = st.file_uploader("Alterar logo (PNG ou JPG)", type=["png", "jpg", "jpeg"], key="logo_uploader_edit")
+                    if uploaded_logo is not None:
+                        # Criar diretório de logos se não existir
+                        logo_dir = os.path.join("assets", "client_logos")
+                        if not os.path.exists(logo_dir):
+                            os.makedirs(logo_dir)
+                        
+                        # Salvar a imagem no diretório de logos
+                        logo_filename = f"logo_{datetime.now().strftime('%Y%m%d%H%M%S')}.png"
+                        logo_path = os.path.join(logo_dir, logo_filename)
+                        
+                        with open(logo_path, "wb") as f:
+                            f.write(uploaded_logo.getbuffer())
+                        
+                        st.success(f"Logo atualizada com sucesso!")
                 
                 col1, col2, col3 = st.columns(3)
                 
@@ -339,7 +389,8 @@ def display_user_management():
                     email=email, 
                     password=password if password else None,
                     role=role,
-                    processes=process_ids if role == 'client' else []
+                    processes=process_ids if role == 'client' else [],
+                    logo_path=logo_path if role == 'client' else None
                 )
                 
                 if success:
