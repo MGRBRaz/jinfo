@@ -1,0 +1,86 @@
+{
+    "processes": [
+        {
+            "id": "1",
+            "ref": "",
+            "invoice": "1",
+            "origin": "CHINA",
+            "type": "exportacao",
+            "container_type": "FCL 1 X 40",
+            "status": "Em andamento",
+            "observations": "",
+            "container": "",
+            "terminal": "",
+            "invoice_number": "",
+            "product": "",
+            "last_update": "13/05/2025",
+            "importer": "",
+            "dispatch_value": "",
+            "knowledge_number": "",
+            "drawback": "",
+            "tracking_number": "",
+            "export_type": "Marítima",
+            "shipping_terminal": "",
+            "redex_clearance": "Sim",
+            "events": [
+                {
+                    "id": "44c46ad7-1281-4a47-984d-89d0cee8e19a",
+                    "date": "13/05/2025",
+                    "description": "Processo criado",
+                    "user": "Admin"
+                }
+            ],
+            "archived": false
+        },
+        {
+            "id": "11",
+            "ref": "",
+            "invoice": "11",
+            "origin": "CHINA",
+            "type": "importacao",
+            "container_type": "FCL 1 X 40",
+            "status": "Em andamento",
+            "observations": "",
+            "container": "212",
+            "terminal": "",
+            "invoice_number": "",
+            "product": "",
+            "last_update": "19/05/2025",
+            "eta": "",
+            "exporter": "112312121",
+            "ship": "1121212",
+            "agent": "12121212121",
+            "bl_number": "11",
+            "di": "",
+            "free_time": "7",
+            "free_time_expiry": "",
+            "po": "",
+            "map": "",
+            "port_entry_date": "01/05/2025",
+            "current_period_start": "17/05/2025",
+            "current_period_expiry": "15/06/2025",
+            "storage_days": 20,
+            "original_docs": "Sim",
+            "empty_return": "",
+            "events": [
+                {
+                    "id": "61753d4a-8a26-4924-aa6b-5f2e5ec5d1c9",
+                    "date": "13/05/2025",
+                    "description": "Processo criado",
+                    "user": "Admin"
+                },
+                {
+                    "id": "4e63d97b-4266-4f67-a3ea-984ce1f36470",
+                    "date": "19/05/2025",
+                    "description": "Período atualizado automaticamente: início 17/05/2025, vencimento 15/06/2025",
+                    "user": "Sistema"
+                }
+            ],
+            "archived": false
+        }
+    ],
+    "next_id": "20250001",
+    "config": {
+        "storage_days_per_period": 15
+    }
+}
